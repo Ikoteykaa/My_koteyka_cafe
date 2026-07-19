@@ -134,6 +134,7 @@ namespace MY_KOTEYKAA_CAFE
             }
 
             string fileName = txtFileName.Text.Trim();
+
             if (!IsValidFileName(fileName))
             {
                 MessageBox.Show("Incorrect filename.");
@@ -141,27 +142,54 @@ namespace MY_KOTEYKAA_CAFE
             }
 
             fileName += ".txt";
-
-            using (StreamWriter writer = new StreamWriter(fileName))
+            if (File.Exists(fileName))
             {
-                double sum = 0;
+                MessageBoxResult result = MessageBox.Show(
+                    "A bill with this name already exists.\nDo you want to overwrite it?",
+                    "File already exists",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
 
-                writer.WriteLine("===== BILL =====");
-                writer.WriteLine();
-
-                foreach (var item in itemsList)
+                if (result == MessageBoxResult.No)
+                    return;
+            }
+            try
+            {
+                using (StreamWriter writer = new StreamWriter(fileName))
                 {
-                    writer.WriteLine($"{item.Description} - {item.Price:F2}");
-                    sum += item.Price;
+                    double sum = 0;
+
+                    writer.WriteLine("===== BILL =====");
+                    writer.WriteLine();
+
+                    foreach (var item in itemsList)
+                    {
+                        writer.WriteLine($"{item.Description} - {item.Price:F2}");
+                        sum += item.Price;
+                    }
+
+                    writer.WriteLine();
+                    writer.WriteLine($"Subtotal: {sum:F2}");
+                    writer.WriteLine($"Tip: {tipAmount:F2}");
+                    writer.WriteLine($"Total: {(sum + tipAmount):F2}");
                 }
 
-                writer.WriteLine();
-                writer.WriteLine($"Subtotal: {sum:F2}");
-                writer.WriteLine($"Tip: {tipAmount:F2}");
-                writer.WriteLine($"Total: {(sum + tipAmount):F2}");
+                MessageBox.Show(
+                    "Bill saved successfully!",
+                    "Success",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
-
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error while saving file:\n{ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
+
         private bool IsValidFileName(string name)
         {
             if (string.IsNullOrWhiteSpace(name) || name.Length < 1 || name.Length > 10)
@@ -171,13 +199,18 @@ namespace MY_KOTEYKAA_CAFE
 
             return name.IndexOfAny(forbidden) == -1;
         }
+
         private void BtnLoad_Click(object sender, RoutedEventArgs e)
         {
             string fileName = txtFileName.Text.Trim();
 
             if (!IsValidFileName(fileName))
             {
-                MessageBox.Show("Incorrect filename.");
+                MessageBox.Show(
+                    "Incorrect filename.",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
                 return;
             }
 
@@ -185,46 +218,70 @@ namespace MY_KOTEYKAA_CAFE
 
             if (!File.Exists(fileName))
             {
-                MessageBox.Show("File not found.");
+                MessageBox.Show(
+                    "A bill with this name was not found.",
+                    "File not found",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
                 return;
             }
 
-            itemsList.Clear();
-            tipAmount = 0;
-
-            using (StreamReader reader = new StreamReader(fileName))
+            try
             {
-                reader.ReadLine();
-                reader.ReadLine();
+                itemsList.Clear();
+                tipAmount = 0;
 
-                string line;
-
-                while ((line = reader.ReadLine()) != null)
+                using (StreamReader reader = new StreamReader(fileName))
                 {
-                    if (line == "")
-                        break;
+                    reader.ReadLine();
+                    reader.ReadLine();
 
-                    string[] data = line.Split('-');
+                    string line;
 
-                    itemsList.Add(new Item
+                    while ((line = reader.ReadLine()) != null)
                     {
-                        Description = data[0].Trim(),
-                        Price = double.Parse(data[1].Trim())
-                    });
+                        if (string.IsNullOrWhiteSpace(line))
+                            break;
+
+                        string[] data = line.Split('-');
+
+                        if (data.Length >= 2)
+                        {
+                            itemsList.Add(new Item
+                            {
+                                Description = data[0].Trim(),
+                                Price = double.Parse(data[1].Trim())
+                            });
+                        }
+                    }
+
+                    reader.ReadLine();
+
+                    line = reader.ReadLine();
+
+                    if (line != null && line.Contains(":"))
+                    {
+                        string[] tipData = line.Split(':');
+                        tipAmount = double.Parse(tipData[1].Trim());
+                    }
                 }
 
-                reader.ReadLine();
+                UpdateBillDisplay();
 
-                line = reader.ReadLine();
-
-                if (line != null)
-                {
-                    string[] tipData = line.Split(':');
-                    tipAmount = double.Parse(tipData[1].Trim());
-                }
+                MessageBox.Show(
+                    "Bill loaded successfully!",
+                    "Success",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information);
             }
-
-            UpdateBillDisplay();
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Error while loading file:\n{ex.Message}",
+                    "Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+            }
         }
     }
 }
