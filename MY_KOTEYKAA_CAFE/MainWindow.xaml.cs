@@ -1,4 +1,5 @@
 ﻿using System.Collections.ObjectModel;
+using System.IO;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -113,6 +114,62 @@ namespace MY_KOTEYKAA_CAFE
             tipAmount = 0;
             txtTip.Clear();
             UpdateBillDisplay();
+        }
+        private void BtnClear_Click(object sender, RoutedEventArgs e)
+        {
+            if (itemsList.Count == 0)
+                return;
+
+            itemsList.Clear();
+            tipAmount = 0;
+
+            UpdateBillDisplay();
+        }
+        private void BtnSave_Click(object sender, RoutedEventArgs e)
+        {
+            if (itemsList.Count == 0)
+            {
+                MessageBox.Show("Bill is empty.");
+                return;
+            }
+
+            string fileName = txtFileName.Text.Trim();
+            if (!IsValidFileName(fileName))
+            {
+                MessageBox.Show("Incorrect filename.");
+                return;
+            }
+
+            fileName += ".txt";
+
+            using (StreamWriter writer = new StreamWriter(fileName))
+            {
+                double sum = 0;
+
+                writer.WriteLine("===== BILL =====");
+                writer.WriteLine();
+
+                foreach (var item in itemsList)
+                {
+                    writer.WriteLine($"{item.Description} - {item.Price:F2}");
+                    sum += item.Price;
+                }
+
+                writer.WriteLine();
+                writer.WriteLine($"Subtotal: {sum:F2}");
+                writer.WriteLine($"Tip: {tipAmount:F2}");
+                writer.WriteLine($"Total: {(sum + tipAmount):F2}");
+            }
+
+        }
+        private bool IsValidFileName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name) || name.Length < 1 || name.Length > 10)
+                return false;
+
+            char[] forbidden = { '\\', '/', ':', '*', '?', '"', '<', '>', '|' };
+
+            return name.IndexOfAny(forbidden) == -1;
         }
     }
 }
