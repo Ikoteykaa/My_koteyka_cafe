@@ -171,5 +171,60 @@ namespace MY_KOTEYKAA_CAFE
 
             return name.IndexOfAny(forbidden) == -1;
         }
+        private void BtnLoad_Click(object sender, RoutedEventArgs e)
+        {
+            string fileName = txtFileName.Text.Trim();
+
+            if (!IsValidFileName(fileName))
+            {
+                MessageBox.Show("Incorrect filename.");
+                return;
+            }
+
+            fileName += ".txt";
+
+            if (!File.Exists(fileName))
+            {
+                MessageBox.Show("File not found.");
+                return;
+            }
+
+            itemsList.Clear();
+            tipAmount = 0;
+
+            using (StreamReader reader = new StreamReader(fileName))
+            {
+                reader.ReadLine();
+                reader.ReadLine();
+
+                string line;
+
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (line == "")
+                        break;
+
+                    string[] data = line.Split('-');
+
+                    itemsList.Add(new Item
+                    {
+                        Description = data[0].Trim(),
+                        Price = double.Parse(data[1].Trim())
+                    });
+                }
+
+                reader.ReadLine();
+
+                line = reader.ReadLine();
+
+                if (line != null)
+                {
+                    string[] tipData = line.Split(':');
+                    tipAmount = double.Parse(tipData[1].Trim());
+                }
+            }
+
+            UpdateBillDisplay();
+        }
     }
 }
